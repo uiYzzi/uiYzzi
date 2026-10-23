@@ -1,0 +1,37 @@
+name: Clean Git History
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 在waka工作流运行后30分钟执行（waka是18:30 UTC，这个是19:00 UTC）
+    - cron: '0 19 * * *'
+
+jobs:
+  clean-history:
+    name: Clean Git History
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          fetch-depth: 0
+      
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+      
+      - name: Clean git history
+        run: |
+          # 创建新的孤儿分支，保留当前所有文件
+          git checkout --orphan latest
+          git add -A
+          git commit -m "Clean history - $(date '+%Y-%m-%d %H:%M:%S')"
+          git branch -D main
+          git branch -m main
+          git push -f origin main
+          
+      - name: Verify cleanup
+        run: |
+          echo "Git history cleaned successfully"
+          git log --oneline -5
